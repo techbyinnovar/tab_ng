@@ -84,6 +84,40 @@ export const productRouter = createTRPCRouter({
 
       return product;
     }),
+    
+  getBySlug: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { slug } = input;
+      
+      const product = await ctx.prisma.product.findUnique({
+        where: { slug },
+        include: {
+          category: true,
+          variants: true,
+          reviews: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  image: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+        },
+      });
+
+      if (!product) {
+        throw new Error("Product not found");
+      }
+
+      return product;
+    }),
 
   create: adminProcedure
     .input(
@@ -109,6 +143,8 @@ export const productRouter = createTRPCRouter({
             images: z.array(z.string()).optional(),
           })
         ).optional(),
+        slug: z.string().min(1),
+        material: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

@@ -11,221 +11,228 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { getPlaceholderImage } from "@/lib/placeholder-image";
+import { api } from "@/lib/trpc";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get('category');
+  
   const [priceRange, setPriceRange] = useState([0, 150000]);
   const [sortBy, setSortBy] = useState("newest");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState(categoryParam || "all");
+
+  // Fetch all categories
+  const { data: categories, isLoading: loadingCategories } = api.category.getAll.useQuery();
+  
+  // Fetch all products
+  const { data: productsData, isLoading: loadingProducts } = api.product.getAll.useQuery({
+    limit: 100, // Fetch a large number of products for client-side filtering
+  });
+
+  // Update selected category when URL parameter changes
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [categoryParam]);
 
   // Filter products based on selected filters
-  const filteredProducts = products.filter((product) => {
-    const matchesCategory = selectedCategory === "all" || product.category.toLowerCase() === selectedCategory;
+  const filteredProducts = productsData?.items.filter((product) => {
+    const matchesCategory = selectedCategory === "all" || product.categoryId === selectedCategory;
     const matchesPriceRange = product.price >= priceRange[0] && product.price <= priceRange[1];
     return matchesCategory && matchesPriceRange;
-  });
+  }) || [];
 
   // Sort products based on selected sort option
   const sortedProducts = [...filteredProducts].sort((a, b) => {
-    if (sortBy === "price-low") return a.price - b.price;
-    if (sortBy === "price-high") return b.price - a.price;
-    if (sortBy === "name-asc") return a.name.localeCompare(b.name);
-    if (sortBy === "name-desc") return b.name.localeCompare(a.name);
-    // Default: newest
-    return b.id - a.id;
+    if (sortBy === "newest") {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    } else if (sortBy === "price-low-high") {
+      return a.price - b.price;
+    } else if (sortBy === "price-high-low") {
+      return b.price - a.price;
+    } else if (sortBy === "name-a-z") {
+      return a.name.localeCompare(b.name);
+    } else if (sortBy === "name-z-a") {
+      return b.name.localeCompare(a.name);
+    }
+    return 0;
   });
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Banner */}
-      <div className="relative h-[40vh] w-full bg-neutral-900 text-white">
-        <div className="absolute inset-0 bg-black/50 z-10" />
-        <div className="absolute inset-0 z-0">
-          <Image 
-            src={getPlaceholderImage("category", 1, 1920, 600)}
-            alt="Our Collection" 
-            fill 
-            className="object-cover"
-            priority
-          />
-        </div>
-        <div className="relative z-20 container mx-auto h-full flex flex-col justify-center items-center px-4 md:px-6 text-center">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-            Our Collection
-          </h1>
-          <p className="text-lg max-w-xl">
-            Discover our handcrafted luxury pieces that blend traditional African craftsmanship with contemporary design.
-          </p>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 md:px-6 py-12">
-        {/* Filters and Sorting */}
-        <div className="flex flex-col md:flex-row justify-between gap-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4 md:items-center">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Category</label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="agbada sets">Agbada Sets</SelectItem>
-                  <SelectItem value="kaftan">Kaftan</SelectItem>
-                  <SelectItem value="accessories">Accessories</SelectItem>
-                </SelectContent>
-              </Select>
+    <div className="container mx-auto px-4 py-8 md:py-12">
+      <h1 className="text-3xl font-serif font-bold mb-8">Our Collection</h1>
+      
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Filters Sidebar */}
+        <div className="w-full lg:w-1/4">
+          <div className="bg-white p-6 border border-neutral-200 sticky top-24">
+            <h2 className="font-medium text-lg mb-4">Filters</h2>
+            
+            {/* Category Filter */}
+            <div className="mb-6">
+              <h3 className="font-medium mb-3">Category</h3>
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <input 
+                    type="radio" 
+                    id="cat-all" 
+                    name="category" 
+                    value="all" 
+                    checked={selectedCategory === "all"}
+                    onChange={() => setSelectedCategory("all")}
+                    className="mr-2"
+                  />
+                  <label htmlFor="cat-all">All Categories</label>
+                </div>
+                
+                {loadingCategories ? (
+                  // Loading skeleton for categories
+                  Array(4).fill(0).map((_, i) => (
+                    <Skeleton key={i} className="h-6 w-full" />
+                  ))
+                ) : (
+                  // Actual categories
+                  categories?.map((category) => (
+                    <div key={category.id} className="flex items-center">
+                      <input 
+                        type="radio" 
+                        id={`cat-${category.id}`} 
+                        name="category" 
+                        value={category.id} 
+                        checked={selectedCategory === category.id}
+                        onChange={() => setSelectedCategory(category.id)}
+                        className="mr-2"
+                      />
+                      <label htmlFor={`cat-${category.id}`}>{category.name}</label>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-            <div className="w-full md:w-[250px]">
-              <label className="text-sm font-medium mb-1 block">Price Range: ₦{priceRange[0].toLocaleString()} - ₦{priceRange[1].toLocaleString()}</label>
-              <Slider
-                defaultValue={[0, 150000]}
-                max={150000}
+            
+            <Separator className="my-6" />
+            
+            {/* Price Range Filter */}
+            <div className="mb-6">
+              <h3 className="font-medium mb-3">Price Range</h3>
+              <Slider 
+                defaultValue={[0, 150000]} 
+                max={150000} 
                 step={5000}
                 value={priceRange}
                 onValueChange={setPriceRange}
-                className="mt-2"
+                className="my-6" 
               />
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Sort By</label>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Newest" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="name-asc">Name: A to Z</SelectItem>
-                <SelectItem value="name-desc">Name: Z to A</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <Separator className="mb-8" />
-
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {sortedProducts.map((product) => (
-            <Link 
-              key={product.id} 
-              href={`/product/${product.slug}`}
-              className="group"
-            >
-              <div className="relative h-[400px] mb-4 overflow-hidden bg-neutral-100">
-                <Image 
-                  src={getPlaceholderImage("product", product.id, 400, 400)}
-                  alt={product.name} 
-                  fill 
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute top-4 right-4 z-10">
-                  {product.isNew && (
-                    <span className="bg-black text-white text-xs font-medium px-2 py-1">
-                      NEW
-                    </span>
-                  )}
-                </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>₦{priceRange[0].toLocaleString()}</span>
+                <span>₦{priceRange[1].toLocaleString()}</span>
               </div>
-              <h3 className="text-lg font-medium mb-2">{product.name}</h3>
-              <p className="text-neutral-500 mb-2">{product.category}</p>
-              <p className="font-medium">₦{product.price.toLocaleString()}</p>
-            </Link>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {sortedProducts.length === 0 && (
-          <div className="text-center py-16">
-            <h3 className="text-xl font-medium mb-2">No products found</h3>
-            <p className="text-neutral-500 mb-6">Try adjusting your filters to find what you&apos;re looking for.</p>
+            </div>
+            
+            <Separator className="my-6" />
+            
+            {/* Reset Filters */}
             <Button 
               variant="outline" 
+              className="w-full"
               onClick={() => {
                 setSelectedCategory("all");
                 setPriceRange([0, 150000]);
-                setSortBy("newest");
               }}
             >
               Reset Filters
             </Button>
           </div>
-        )}
+        </div>
+        
+        {/* Products Grid */}
+        <div className="w-full lg:w-3/4">
+          {/* Sort Controls */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+            <p className="text-neutral-600 mb-4 sm:mb-0">
+              Showing {sortedProducts.length} products
+            </p>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="price-low-high">Price: Low to High</SelectItem>
+                <SelectItem value="price-high-low">Price: High to Low</SelectItem>
+                <SelectItem value="name-a-z">Name: A to Z</SelectItem>
+                <SelectItem value="name-z-a">Name: Z to A</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Products */}
+          {loadingProducts ? (
+            // Loading skeleton for products
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array(9).fill(0).map((_, i) => (
+                <div key={i} className="bg-white border border-neutral-200">
+                  <Skeleton className="h-[300px] w-full" />
+                  <div className="p-4">
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2 mb-4" />
+                    <Skeleton className="h-6 w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : sortedProducts.length === 0 ? (
+            // No products found
+            <div className="text-center py-12">
+              <h3 className="text-xl font-medium mb-2">No products found</h3>
+              <p className="text-neutral-600 mb-6">Try adjusting your filters to find what you&apos;re looking for.</p>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSelectedCategory("all");
+                  setPriceRange([0, 150000]);
+                }}
+              >
+                Reset Filters
+              </Button>
+            </div>
+          ) : (
+            // Products grid
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortedProducts.map((product) => (
+                <Link key={product.id} href={`/product/${product.slug}`} className="group">
+                  <div className="bg-white border border-neutral-200 hover:shadow-md transition-shadow">
+                    <div className="relative h-[300px] overflow-hidden">
+                      {product.isNew && (
+                        <div className="absolute top-2 right-2 z-10 bg-black text-white text-xs font-medium px-2 py-1">
+                          NEW
+                        </div>
+                      )}
+                      <Image 
+                        src={getPlaceholderImage("product", product.id, 600, 600)}
+                        alt={product.name} 
+                        fill 
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-medium group-hover:text-primary transition-colors">{product.name}</h3>
+                      <p className="text-neutral-500 mb-2">{product.category.name}</p>
+                      <p className="font-semibold">₦{product.price.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
-// Temporary product data until we connect to the API
-const products = [
-  {
-    id: 1,
-    name: "Royal Agbada Set",
-    slug: "royal-agbada-set",
-    category: "Agbada Sets",
-    price: 85000,
-    isNew: true,
-  },
-  {
-    id: 2,
-    name: "Embroidered Kaftan",
-    slug: "embroidered-kaftan",
-    category: "Kaftan",
-    price: 45000,
-    isNew: false,
-  },
-  {
-    id: 3,
-    name: "Velvet Agbada",
-    slug: "velvet-agbada",
-    category: "Agbada Sets",
-    price: 95000,
-    isNew: true,
-  },
-  {
-    id: 4,
-    name: "Classic Kaftan",
-    slug: "classic-kaftan",
-    category: "Kaftan",
-    price: 35000,
-    isNew: false,
-  },
-  {
-    id: 5,
-    name: "Premium Agbada Set",
-    slug: "premium-agbada-set",
-    category: "Agbada Sets",
-    price: 120000,
-    isNew: true,
-  },
-  {
-    id: 6,
-    name: "Luxury Kaftan",
-    slug: "luxury-kaftan",
-    category: "Kaftan",
-    price: 65000,
-    isNew: false,
-  },
-  {
-    id: 7,
-    name: "Traditional Cap",
-    slug: "traditional-cap",
-    category: "Accessories",
-    price: 15000,
-    isNew: false,
-  },
-  {
-    id: 8,
-    name: "Beaded Necklace",
-    slug: "beaded-necklace",
-    category: "Accessories",
-    price: 25000,
-    isNew: true,
-  },
-];
