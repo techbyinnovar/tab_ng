@@ -122,6 +122,7 @@ export const productRouter = createTRPCRouter({
   create: adminProcedure
     .input(
       z.object({
+        id: z.string().optional(),
         name: z.string().min(1),
         description: z.string().min(1),
         price: z.number().positive(),
@@ -143,31 +144,46 @@ export const productRouter = createTRPCRouter({
             images: z.array(z.string()).optional(),
           })
         ).optional(),
-        slug: z.string().min(1),
         material: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { variants, ...productData } = input;
-      
-      const product = await ctx.prisma.product.create({
-        data: {
-          ...productData,
-          ...(variants && variants.length > 0
-            ? {
-                variants: {
-                  create: variants,
-                },
-              }
-            : {}),
-        },
-        include: {
-          variants: true,
-          category: true,
-        },
-      });
-
-      return product;
+      try {
+        console.log("Creating product with data:", input);
+        
+        const { variants, ...productData } = input;
+        
+        // Generate a slug from the product name
+        const slug = input.name
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '') // Remove special characters
+          .replace(/\s+/g, '-')     // Replace spaces with hyphens
+          .replace(/-+/g, '-');     // Replace multiple hyphens with a single hyphen
+        
+        // Create the product with all fields including a generated slug
+        const product = await ctx.prisma.product.create({
+          data: {
+            ...productData,
+            slug, // Add the generated slug
+            ...(variants && variants.length > 0
+              ? {
+                  variants: {
+                    create: variants,
+                  },
+                }
+              : {}),
+          },
+          include: {
+            variants: true,
+            category: true,
+          },
+        });
+        
+        return product;
+      } catch (error) {
+        console.error("Error creating product:", error);
+        throw error;
+      }
     }),
 
   update: adminProcedure

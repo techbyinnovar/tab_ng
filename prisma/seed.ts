@@ -3,6 +3,15 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+// Function to generate slug from a string
+function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-')     // Replace spaces with hyphens
+    .replace(/-+/g, '-');     // Replace multiple hyphens with a single hyphen
+}
+
 async function main() {
   console.log('Starting seed...');
 
@@ -76,6 +85,7 @@ async function main() {
       images: ['royal-agbada-1.jpg', 'royal-agbada-2.jpg'],
       featured: true,
       isNew: true,
+      material: 'Premium cotton blend',
       categoryId: createdCategories.find(c => c.slug === 'agbada')?.id,
     },
     {
@@ -86,6 +96,7 @@ async function main() {
       images: ['embroidered-kaftan-1.jpg', 'embroidered-kaftan-2.jpg'],
       featured: true,
       isNew: false,
+      material: 'Cotton',
       categoryId: createdCategories.find(c => c.slug === 'kaftan')?.id,
     },
     {
@@ -96,6 +107,7 @@ async function main() {
       images: ['velvet-agbada-1.jpg', 'velvet-agbada-2.jpg'],
       featured: true,
       isNew: true,
+      material: 'Velvet',
       categoryId: createdCategories.find(c => c.slug === 'agbada')?.id,
     },
     {
@@ -106,6 +118,7 @@ async function main() {
       images: ['classic-kaftan-1.jpg', 'classic-kaftan-2.jpg'],
       featured: false,
       isNew: false,
+      material: 'Cotton',
       categoryId: createdCategories.find(c => c.slug === 'kaftan')?.id,
     },
     {
@@ -117,6 +130,7 @@ async function main() {
       images: ['premium-agbada-1.jpg', 'premium-agbada-2.jpg'],
       featured: true,
       isNew: false,
+      material: 'Premium cotton blend',
       categoryId: createdCategories.find(c => c.slug === 'agbada')?.id,
     },
     {
@@ -127,6 +141,7 @@ async function main() {
       images: ['luxury-kaftan-1.jpg', 'luxury-kaftan-2.jpg'],
       featured: true,
       isNew: true,
+      material: 'Silk',
       categoryId: createdCategories.find(c => c.slug === 'kaftan')?.id,
     },
     {
@@ -137,6 +152,7 @@ async function main() {
       images: ['traditional-cap-1.jpg', 'traditional-cap-2.jpg'],
       featured: false,
       isNew: false,
+      material: 'Woven fabric',
       categoryId: createdCategories.find(c => c.slug === 'accessories')?.id,
     },
     {
@@ -147,6 +163,7 @@ async function main() {
       images: ['beaded-necklace-1.jpg', 'beaded-necklace-2.jpg'],
       featured: true,
       isNew: true,
+      material: 'Glass beads',
       categoryId: createdCategories.find(c => c.slug === 'accessories')?.id,
     },
     {
@@ -157,6 +174,7 @@ async function main() {
       images: ['colorful-dashiki-1.jpg', 'colorful-dashiki-2.jpg'],
       featured: true,
       isNew: true,
+      material: 'Cotton',
       categoryId: createdCategories.find(c => c.slug === 'dashiki')?.id,
     },
     {
@@ -167,6 +185,7 @@ async function main() {
       images: ['premium-aso-oke-1.jpg', 'premium-aso-oke-2.jpg'],
       featured: true,
       isNew: false,
+      material: 'Hand-woven fabric',
       categoryId: createdCategories.find(c => c.slug === 'aso-oke')?.id,
     },
   ];
@@ -178,14 +197,17 @@ async function main() {
         return;
       }
 
+      // Generate a slug from the product name
+      const slug = generateSlug(product.name);
+
       const created = await prisma.product.upsert({
         where: { 
           // Use a unique ID based on the product name
-          id: `seed-${product.name.toLowerCase().replace(/\s+/g, '-')}`,
+          id: `seed-${generateSlug(product.name)}`,
         },
         update: {},
         create: {
-          id: `seed-${product.name.toLowerCase().replace(/\s+/g, '-')}`,
+          id: `seed-${generateSlug(product.name)}`,
           name: product.name,
           description: product.description,
           price: product.price,
@@ -195,9 +217,11 @@ async function main() {
           featured: product.featured,
           isNew: product.isNew,
           categoryId: product.categoryId,
+          slug: slug,
+          material: product.material,
         },
       });
-      console.log(`Created product: ${created.name}`);
+      console.log(`Created product: ${created.name} with slug: ${created.slug}`);
     })
   );
 

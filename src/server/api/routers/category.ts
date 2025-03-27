@@ -85,47 +85,61 @@ export const categoryRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string().min(1),
-        description: z.string().optional(),
-        image: z.string().optional(),
+        description: z.string().nullable(),
+        image: z.string().nullable().optional(),
         slug: z.string().min(1),
-        parentId: z.string().optional().nullable(),
+        parentId: z.string().nullable(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const category = await ctx.prisma.category.create({
-        data: input,
-        include: {
-          parent: true,
-        },
-      });
-
-      return category;
+      console.log("Creating category with data:", input);
+      
+      try {
+        const category = await ctx.prisma.category.create({
+          data: input,
+          include: {
+            parent: true,
+          },
+        });
+        
+        return category;
+      } catch (error) {
+        console.error("Error creating category:", error);
+        throw error;
+      }
     }),
 
   update: adminProcedure
     .input(
       z.object({
         id: z.string(),
-        name: z.string().min(1).optional(),
-        description: z.string().optional().nullable(),
-        image: z.string().optional().nullable(),
-        slug: z.string().min(1).optional(),
-        parentId: z.string().optional().nullable(),
+        name: z.string().min(1),
+        description: z.string().nullable(),
+        image: z.string().nullable().optional(),
+        slug: z.string().min(1),
+        parentId: z.string().nullable(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...data } = input;
+      console.log("Updating category with data:", input);
       
-      const category = await ctx.prisma.category.update({
-        where: { id },
-        data,
-        include: {
-          parent: true,
-          subcategories: true,
-        },
-      });
-
-      return category;
+      try {
+        const { id, ...data } = input;
+        
+        const category = await ctx.prisma.category.update({
+          where: { id },
+          data,
+          include: {
+            parent: true,
+            subcategories: true,
+          },
+        });
+        
+        return category;
+      } catch (error) {
+        console.error("Error updating category:", error);
+        throw error;
+      }
     }),
 
   delete: adminProcedure
