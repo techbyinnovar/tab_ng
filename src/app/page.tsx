@@ -2,10 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { getPlaceholderImage, getPlaceholderAvatar } from "@/lib/placeholder-image";
+import { isValidImageUrl } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { api } from "@/lib/trpc";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import HomepageSlider from "@/components/ui/homepage-slider";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
@@ -17,7 +19,7 @@ export default function Home() {
     });
     
   // Fetch categories from the database
-  const { data: categoriesData, isLoading: loadingCategories } = 
+  const { data: categoriesData, isLoading: isCategoriesLoading } = 
     api.category.getAll.useQuery();
     
   // Fetch new arrivals from the database
@@ -26,6 +28,10 @@ export default function Home() {
       isNew: true,
       limit: 4
     });
+    
+  // Fetch sliders from the database
+  const { data: sliders, isLoading: isSlidersLoading } = 
+    api.slider.getActive.useQuery();
     
   // Fetch testimonials (using a placeholder for now since we don't have a testimonial router)
   const testimonials = [
@@ -49,43 +55,43 @@ export default function Home() {
     }
   ];
   
+  const featuredCategories = [
+    {
+      id: 1,
+      name: "Agbada",
+      image: getPlaceholderImage("category", 1, 600, 800)
+    },
+    {
+      id: 2,
+      name: "Kaftan",
+      image: getPlaceholderImage("category", 2, 600, 800)
+    },
+    {
+      id: 3,
+      name: "Suit",
+      image: getPlaceholderImage("category", 3, 600, 800)
+    }
+  ];
+  
   return (
     <main className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative h-[80vh] w-full bg-neutral-900 text-white">
-        <div className="absolute inset-0 bg-black/40 z-10" />
-        <div className="absolute inset-0 z-0">
-          <Image 
-            src={getPlaceholderImage("category", "hero", 1920, 1080)}
-            alt="Tab.ng - Luxury African Attire" 
-            fill 
-            className="object-cover"
-            priority
-          />
-        </div>
-        <div className="relative z-20 container mx-auto h-full flex flex-col justify-center px-4 md:px-6">
-          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-4 max-w-3xl">
-            Luxury African Attire for the Modern Man
-          </h1>
-          <p className="text-xl max-w-xl mb-8">
-            Handcrafted pieces that blend traditional craftsmanship with contemporary design.
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <Button asChild size="lg" className="bg-white text-black hover:bg-neutral-200">
-              <Link href="/products">Shop Collection</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-              <Link href="/about">Our Story</Link>
-            </Button>
+      <section className="relative w-full bg-neutral-900 text-white">
+        {isSlidersLoading ? (
+          // Loading state
+          <div className="h-[80vh] w-full bg-neutral-900 flex items-center justify-center">
+            <div className="animate-pulse text-white">Loading...</div>
           </div>
-        </div>
+        ) : (
+          <HomepageSlider slides={sliders || []} />
+        )}
       </section>
 
       {/* Featured Categories */}
       <section className="py-16 container mx-auto px-4 md:px-6">
         <h2 className="text-3xl font-serif font-bold mb-8 text-center">Shop by Category</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loadingCategories ? (
+          {isCategoriesLoading ? (
             // Loading skeleton
             Array(3).fill(0).map((_, i) => (
               <div key={i} className="relative h-80 rounded-lg overflow-hidden">
@@ -99,7 +105,9 @@ export default function Home() {
                 <div className="relative h-80 rounded-lg overflow-hidden">
                   <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors z-10" />
                   <Image 
-                    src={getPlaceholderImage("category", category.id, 600, 800)}
+                    src={category.image && isValidImageUrl(category.image) 
+                      ? category.image 
+                      : getPlaceholderImage("category", category.id, 600, 800)}
                     alt={category.name} 
                     fill 
                     className="object-cover group-hover:scale-105 transition-transform duration-300"

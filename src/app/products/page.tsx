@@ -11,6 +11,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { getPlaceholderImage } from "@/lib/placeholder-image";
+import { isValidImageUrl } from "@/lib/utils";
 import { api } from "@/lib/trpc";
 import Image from "next/image";
 import Link from "next/link";
@@ -215,7 +216,9 @@ export default function ProductsPage() {
                         </div>
                       )}
                       <Image 
-                        src={getPlaceholderImage("product", product.id, 600, 600)}
+                        src={product.images && product.images[0] && isValidImageUrl(product.images[0]) 
+                          ? product.images[0] 
+                          : getPlaceholderImage("product", product.id, 600, 600)}
                         alt={product.name} 
                         fill 
                         className="object-cover group-hover:scale-105 transition-transform duration-300"

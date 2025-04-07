@@ -13,10 +13,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import { Menu, Search, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { CartButton } from "@/components/ui/cart-button";
+import { CartDrawer } from "@/components/ui/cart-drawer";
 
 export function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -122,20 +124,8 @@ export function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Shopping Bag */}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Shopping bag"
-            asChild
-          >
-            <Link href="/cart" className="relative">
-              <ShoppingBag className="h-5 w-5" />
-              <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-black text-xs text-white">
-                0
-              </span>
-            </Link>
-          </Button>
+          {/* Cart Button */}
+          <CartButton />
         </div>
       </div>
 
@@ -149,12 +139,14 @@ export function Navbar() {
                 type="search"
                 placeholder="Search for products..."
                 className="w-full rounded-md border border-neutral-300 bg-white py-2 pl-10 pr-4 text-sm placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-950"
-                autoFocus
               />
             </div>
           </div>
         </div>
       )}
+      
+      {/* Shopping Cart Drawer */}
+      <CartDrawer />
     </header>
   );
 }

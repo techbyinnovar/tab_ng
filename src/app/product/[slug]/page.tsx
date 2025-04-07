@@ -8,20 +8,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getPlaceholderImage } from "@/lib/placeholder-image";
+import { isValidImageUrl } from "@/lib/utils";
 import { api } from "@/lib/trpc";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
+import { useCart } from "@/contexts/cart-context";
 
 export default function ProductDetailPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState("m");
   const [quantity, setQuantity] = useState(1);
+  const { addItem } = useCart();
   
   // Fetch product by slug from the database
   const { data: product, isLoading } = api.product.getBySlug.useQuery(
@@ -38,12 +40,21 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const handleAddToCart = () => {
     if (!product) return;
     
-    console.log('Added to cart:', {
-      product,
+    // Get the main product image or use a placeholder
+    const productImage = product.images && product.images[0] && isValidImageUrl(product.images[0])
+      ? product.images[0]
+      : getPlaceholderImage("product", product.id, 800, 800);
+    
+    // Add the item to the cart
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: productImage,
+      quantity: quantity,
       size: selectedSize,
-      quantity
+      slug: product.slug,
     });
-    // In a real app, this would dispatch to a cart state manager or API
   };
 
   // Show loading state while fetching product
@@ -92,7 +103,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
         <div className="w-full md:w-1/2">
           <div className="relative aspect-square bg-neutral-100 mb-4">
             <Image 
-              src={getPlaceholderImage("product", product.id, 800, 800)}
+              src={product.images && product.images[0] && isValidImageUrl(product.images[0])
+                ? product.images[0]
+                : getPlaceholderImage("product", product.id, 800, 800)}
               alt={product.name} 
               fill 
               className="object-cover"
@@ -100,16 +113,30 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             />
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="relative aspect-square bg-neutral-100 cursor-pointer">
-                <Image 
-                  src={getPlaceholderImage("product", `${product.id}-${i}`, 200, 200)}
-                  alt={`${product.name} view ${i}`} 
-                  fill 
-                  className="object-cover"
-                />
-              </div>
-            ))}
+            {product.images && product.images.length > 1 
+              ? product.images.slice(1).map((image, i) => (
+                <div key={i} className="relative aspect-square bg-neutral-100 cursor-pointer">
+                  <Image 
+                    src={isValidImageUrl(image) 
+                      ? image 
+                      : getPlaceholderImage("product", `${product.id}-${i+1}`, 200, 200)}
+                    alt={`${product.name} view ${i+1}`} 
+                    fill 
+                    className="object-cover"
+                  />
+                </div>
+              ))
+              : [1, 2, 3].map((i) => (
+                <div key={i} className="relative aspect-square bg-neutral-100 cursor-pointer">
+                  <Image 
+                    src={getPlaceholderImage("product", `${product.id}-${i}`, 200, 200)}
+                    alt={`${product.name} view ${i}`} 
+                    fill 
+                    className="object-cover"
+                  />
+                </div>
+              ))
+            }
           </div>
         </div>
         

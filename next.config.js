@@ -4,7 +4,9 @@ const nextConfig = {
     domains: [
       'images.unsplash.com',
       'via.placeholder.com',
-      'i.pravatar.cc'
+      'i.pravatar.cc',
+      'pfirenjlvylwekls.public.blob.vercel-storage.com',
+      'res.cloudinary.com'
     ],
   },
 };

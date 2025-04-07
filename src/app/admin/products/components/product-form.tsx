@@ -5,21 +5,16 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { api } from "@/lib/trpc";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { api } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { slugify } from "@/lib/utils";
-import ImageUpload from "@/components/ui/image-upload";
+import BlobImageUpload from "@/components/ui/blob-image-upload";
+import { getPlaceholderImage } from "@/lib/placeholder-image";
 
 interface ProductFormProps {
   initialData?: {
@@ -100,16 +95,40 @@ export function ProductForm({ initialData, mode }: ProductFormProps) {
     setIsLoading(true);
 
     // Validate form
-    if (!name || !description || !price || !categoryId) {
+    if (!name || !price || !inventory || !categoryId) {
       toast.error("Please fill in all required fields");
       setIsLoading(false);
       return;
     }
 
     try {
-      // Create a temporary ID for the slug if we're creating a new product
-      const tempId = Math.random().toString(36).substring(2, 15);
-      
+      // Generate slug if not provided
+      if (!slug) {
+        setSlug(slugify(name));
+      }
+
+      // Generate a temporary ID for new products to avoid slug conflicts
+      const tempId = Math.random().toString(36).substring(2, 9);
+
+      // Use placeholder image if no images are uploaded
+      let productImages = images;
+      if (productImages.length === 0) {
+        productImages = [getPlaceholderImage('product', name)];
+      }
+
+      // Validate image URLs
+      productImages = productImages.map(img => {
+        // Check if the image URL is valid
+        try {
+          new URL(img);
+          return img;
+        } catch {
+          // If URL is invalid, use placeholder
+          return getPlaceholderImage('product', name);
+        }
+      });
+
+      // Prepare product data
       const productData = {
         name,
         description,
@@ -118,10 +137,11 @@ export function ProductForm({ initialData, mode }: ProductFormProps) {
         categoryId,
         featured,
         isNew,
+        slug,
         // Use a temporary ID in the slug to avoid conflicts
-        id: mode === 'create' ? `temp-${tempId}` : undefined,
+        id: mode === 'create' ? `temp-${tempId}` : initialData?.id,
         material: material || undefined,
-        images,
+        images: productImages,
       };
 
       console.log("Submitting product data:", productData);
@@ -294,7 +314,7 @@ export function ProductForm({ initialData, mode }: ProductFormProps) {
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Product Images</h3>
             
-            <ImageUpload
+            <BlobImageUpload
               value={images}
               disabled={isLoading}
               onChange={(url) => setImages([...images, url])}

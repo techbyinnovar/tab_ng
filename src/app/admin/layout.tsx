@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ShoppingBag, Users, Package, Settings, LogOut, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Users, Package, Settings, LogOut, ShoppingCart, Layers } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -50,6 +50,11 @@ export default function AdminLayout({
       name: "Categories",
       href: "/admin/categories",
       icon: Package,
+    },
+    {
+      name: "Sliders",
+      href: "/admin/sliders",
+      icon: Layers,
     },
     {
       name: "Orders",

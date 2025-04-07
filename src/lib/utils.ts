@@ -24,16 +24,13 @@ export function formatPrice(
   }).format(numericPrice);
 }
 
+/**
+ * Format a number as Nigerian Naira currency
+ * @param amount - The amount to format
+ * @returns Formatted currency string
+ */
 export function formatCurrency(amount: number): string {
-  // Convert from cents to dollars/naira
-  const value = amount / 100;
-  
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+  return `₦${amount.toLocaleString('en-NG')}`;
 }
 
 export function formatDate(date: Date | string) {
@@ -67,4 +64,27 @@ export function generateOrderNumber() {
     .toString()
     .padStart(4, "0");
   return `TAB-${timestamp}-${random}`;
+}
+
+/**
+ * Validates if a string is a valid image URL
+ * Returns true if the URL is valid and absolute (starts with http:// or https://)
+ */
+export function isValidImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  
+  // Check if it's a data URL (base64)
+  if (url.startsWith('data:image/')) return true;
+  
+  // Check if it's a URL with common image extensions
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.avif'];
+  const lowercaseUrl = url.toLowerCase();
+  
+  // Check for common image extensions
+  const hasImageExtension = imageExtensions.some(ext => lowercaseUrl.endsWith(ext));
+  
+  // Check if it's a URL (starts with http:// or https:// or //)
+  const isUrl = /^(https?:\/\/|\/\/)/.test(url);
+  
+  return isUrl && hasImageExtension;
 }

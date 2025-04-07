@@ -19,7 +19,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { slugify } from "@/lib/utils";
-import ImageUpload from "@/components/ui/image-upload";
+import BlobImageUpload from "@/components/ui/blob-image-upload";
+import { getPlaceholderImage } from "@/lib/placeholder-image";
 
 interface CategoryFormProps {
   initialData?: {
@@ -95,10 +96,27 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
     }
 
     try {
+      // Validate and prepare image
+      let categoryImage;
+      
+      if (images.length > 0) {
+        // Check if the image URL is valid
+        try {
+          new URL(images[0]);
+          categoryImage = images[0];
+        } catch {
+          // If URL is invalid, use placeholder
+          categoryImage = getPlaceholderImage('category', name);
+        }
+      } else {
+        // No image provided, use placeholder
+        categoryImage = getPlaceholderImage('category', name);
+      }
+      
       const categoryData = {
         name,
         description: description || null,
-        image: images.length > 0 ? images[0] : null,
+        image: categoryImage,
         slug,
         parentId: parentId === "none" ? null : parentId,
       };
@@ -180,7 +198,7 @@ export function CategoryForm({ initialData, mode }: CategoryFormProps) {
           
           <div className="space-y-4">
             <Label htmlFor="image">Category Image</Label>
-            <ImageUpload
+            <BlobImageUpload
               value={images}
               disabled={isLoading}
               onChange={(url) => {
