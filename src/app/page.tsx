@@ -6,7 +6,7 @@ import { isValidImageUrl } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { api } from "@/lib/trpc";
-import { useState, useEffect } from "react";
+// import { useState, useEffect } from "react";
 import HomepageSlider from "@/components/ui/homepage-slider";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -55,6 +55,7 @@ export default function Home() {
     }
   ];
   
+  /* Featured categories data for future use
   const featuredCategories = [
     {
       id: 1,
@@ -72,6 +73,7 @@ export default function Home() {
       image: getPlaceholderImage("category", 3, 600, 800)
     }
   ];
+  */
   
   return (
     <main className="min-h-screen bg-white">
@@ -235,7 +237,7 @@ export default function Home() {
                     <p className="text-neutral-400 text-sm">{testimonial.location}</p>
                   </div>
                 </div>
-                <p className="italic">"{testimonial.text}"</p>
+                <p className="italic">&ldquo;{testimonial.text}&rdquo;</p>
               </div>
             ))}
           </div>

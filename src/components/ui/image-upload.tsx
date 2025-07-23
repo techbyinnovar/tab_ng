@@ -27,10 +27,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setIsMounted(true);
   }, []);
 
-  // Use the correct type for Cloudinary's callback
-  const onUpload = (results: any) => {
+  // Use a more flexible type for Cloudinary's callback
+  const onUpload = (results: { info?: { secure_url?: string } | string }) => {
     if (results?.info && typeof results.info === 'object' && 'secure_url' in results.info) {
-      onChange(results.info.secure_url);
+      // Ensure secure_url is defined before passing it
+      if (results.info.secure_url) {
+        onChange(results.info.secure_url);
+      }
     }
   };
 

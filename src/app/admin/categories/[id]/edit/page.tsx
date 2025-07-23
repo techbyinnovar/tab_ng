@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
+// @ts-expect-error - Next.js App Router type incompatibility
 export default function EditCategoryPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   

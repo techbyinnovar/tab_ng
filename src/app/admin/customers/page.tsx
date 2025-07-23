@@ -123,7 +123,7 @@ const initialCustomers = [
 ];
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState(initialCustomers);
+  const [customers] = useState(initialCustomers);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedCustomer, setSelectedCustomer] = useState<typeof initialCustomers[0] | null>(null);

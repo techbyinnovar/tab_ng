@@ -16,7 +16,7 @@ export function PlaceholderImage({
   text,
   className,
 }: PlaceholderImageProps) {
-  const aspectRatio = width / height;
+  // const aspectRatio = width / height;
   const displayText = text || `${type.charAt(0).toUpperCase() + type.slice(1)}`;
   
   // Generate a background color based on the type
